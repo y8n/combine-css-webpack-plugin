@@ -5,6 +5,7 @@ var CleanCSS = require('clean-css');
 
 function CSSCombPlugin(opts) {
     this.options = opts;
+    this.map = {};
 }
 CSSCombPlugin.prototype.apply = function (compiler) {
     var self = this;
@@ -37,14 +38,20 @@ CSSCombPlugin.prototype.apply = function (compiler) {
 CSSCombPlugin.prototype.cssCombFile = function (sourcePath) {
     var commetReg = /\/\*\*?([^]+?)\*\//g;
     var requireReg = /@require\s+(.+)\s/g;
-    var fileContent = fs.readFileSync(sourcePath, 'utf8');
+    if(this.map[sourcePath]) {
+        fileContent = ''
+    }else {
+        var fileContent = fs.readFileSync(sourcePath, 'utf8');
+        this.map[sourcePath] = true;
+    }
     var match, requireMatch, filepath;
     var requireContent = '';
     while ((match = commetReg.exec(fileContent))) {
         while ((requireMatch = requireReg.exec(match[0]))) {
             filepath = path.resolve(path.dirname(sourcePath), requireMatch[1]);
             try {
-                requireContent += fs.readFileSync(filepath, 'utf8') + '\n';
+                //requireContent += fs.readFileSync(filepath, 'utf8') + '\n';
+                requireContent += this.cssCombFile(filepath);
             } catch (e) {
             }
         }
